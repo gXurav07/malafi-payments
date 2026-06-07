@@ -1,0 +1,2 @@
+ALTER TABLE payments
+    ADD CONSTRAINT chk_payments_amount_positive CHECK (amount > 0);

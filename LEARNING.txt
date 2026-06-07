@@ -1,0 +1,10 @@
+
+Phase-1
+To Learn:
+    1. Transactions     2. Payments State Machine       3. Flyway Migrations
+    4. Optimistic Locking
+
+
+Learnings:
+    1. Spring Boot      2. Postgres Basics         3. Spring Data JPA
+    4. Flyway -> Acts as Git for databases; Stores all database alter history

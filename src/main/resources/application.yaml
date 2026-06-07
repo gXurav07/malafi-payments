@@ -1,0 +1,26 @@
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+spring:
+  application:
+    name: malafi-payments
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/malafi_payments
+    username: malafi
+    password: malafi
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+

@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: malafi-postgres
+    environment:
+      POSTGRES_DB: malafi_payments
+      POSTGRES_USER: malafi
+      POSTGRES_PASSWORD: malafi
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U malafi -d malafi_payments"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

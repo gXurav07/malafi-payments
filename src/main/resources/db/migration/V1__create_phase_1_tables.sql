@@ -1,0 +1,8 @@
+CREATE TABLE merchants (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    api_key VARCHAR(128) NOT NULL UNIQUE,
+    status VARCHAR(30) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    modified_at TIMESTAMPTZ NOT NULL
+);
