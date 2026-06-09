@@ -5,8 +5,8 @@ import com.malafi.payments.malafi_payments.merchant.MerchantRepository;
 import com.malafi.payments.malafi_payments.merchant.MerchantStatus;
 import com.malafi.payments.malafi_payments.payment.dto.CreatePaymentRequest;
 import com.malafi.payments.malafi_payments.payment.dto.PaymentResponse;
-import com.malafi.payments.malafi_payments.psp.PaymentProviderAdapter;
-import com.malafi.payments.malafi_payments.psp.dto.PaymentProviderRequest;
+import com.malafi.payments.malafi_payments.psp.PaymentProviderRegistry;
+import com.malafi.payments.malafi_payments.psp.PspProperties;
 import com.malafi.payments.malafi_payments.psp.dto.PaymentProviderResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,13 +14,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final MerchantRepository merchantRepository;
-    private final PaymentProviderAdapter paymentProviderAdapter;
+    private final PaymentProviderRegistry paymentProviderRegistry;
+    private final PspProperties pspProperties;
     private final PaymentProcessingTransactionService paymentProcessingTransactionService;
 
     @Transactional
@@ -47,11 +51,28 @@ public class PaymentService {
     }
 
     public PaymentResponse confirmPayment(Long paymentId) {
-        PaymentProviderRequest providerRequest = paymentProcessingTransactionService.startProcessing(paymentId);
+        PaymentProcessingStart processingStart = paymentProcessingTransactionService.startProcessing(paymentId);
 
-        PaymentProviderResult result =
-                paymentProviderAdapter.process(providerRequest);
+        PaymentProviderResult result = processWithMetrics(processingStart);
 
-        return paymentProcessingTransactionService.completeProcessing(providerRequest.attemptId(), result);
+        return paymentProcessingTransactionService.completeProcessing(processingStart.providerRequest().attemptId(), result);
+    }
+
+    private PaymentProviderResult processWithMetrics(PaymentProcessingStart processingStart) {
+        long startTimeNanos = System.nanoTime();
+        PaymentProviderResult result = paymentProviderRegistry
+                .get(processingStart.selectedPsp())
+                .process(processingStart.providerRequest());
+        long latencyMs = (System.nanoTime() - startTimeNanos) / 1_000_000;
+
+        return result.withMetrics(latencyMs, calculateCost(processingStart));
+    }
+
+    private BigDecimal calculateCost(PaymentProcessingStart processingStart) {
+        int costBps = pspProperties.provider(processingStart.selectedPsp()).getCostBps();
+        return processingStart.providerRequest()
+                .amount()
+                .multiply(BigDecimal.valueOf(costBps))
+                .divide(BigDecimal.valueOf(10_000), 2, RoundingMode.HALF_UP);
     }
 }

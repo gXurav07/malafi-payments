@@ -1,8 +1,9 @@
 
 Phase-1
 To Learn:
-    1. Transactions     2. Payments State Machine       3. Flyway Migrations
-    4. Optimistic Locking
+    1. Transactions     2. Payments State Machine
+    3. Optimistic Locking   4. SAGA
+    5.
 
 
 Learnings:

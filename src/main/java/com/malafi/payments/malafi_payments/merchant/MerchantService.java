@@ -18,7 +18,7 @@ public class MerchantService {
 
     @Transactional
     public MerchantResponse createMerchant(CreateMerchantRequest request) {
-        Merchant merchant = new Merchant(request.name(), generateApiKey());
+        Merchant merchant = new Merchant(request.name(), generateApiKey(), request.routingStrategy());
         Merchant savedMerchant = merchantRepository.save(merchant);
 
         return MerchantResponse.from(savedMerchant);

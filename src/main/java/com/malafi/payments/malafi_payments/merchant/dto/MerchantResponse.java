@@ -2,6 +2,7 @@ package com.malafi.payments.malafi_payments.merchant.dto;
 
 import com.malafi.payments.malafi_payments.merchant.Merchant;
 import com.malafi.payments.malafi_payments.merchant.MerchantStatus;
+import com.malafi.payments.malafi_payments.routing.RoutingStrategy;
 
 import java.time.Instant;
 
@@ -10,6 +11,7 @@ public record MerchantResponse(
         String name,
         String apiKey,
         MerchantStatus status,
+        RoutingStrategy routingStrategy,
         Instant createdAt,
         Instant modifiedAt
 ) {
@@ -19,6 +21,7 @@ public record MerchantResponse(
                 merchant.getName(),
                 merchant.getApiKey(),
                 merchant.getStatus(),
+                merchant.getRoutingStrategy(),
                 merchant.getCreatedAt(),
                 merchant.getModifiedAt()
         );

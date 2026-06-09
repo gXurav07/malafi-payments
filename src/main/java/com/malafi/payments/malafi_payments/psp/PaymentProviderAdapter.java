@@ -3,22 +3,47 @@ package com.malafi.payments.malafi_payments.psp;
 import com.malafi.payments.malafi_payments.psp.dto.PaymentProviderRequest;
 import com.malafi.payments.malafi_payments.psp.dto.PaymentProviderResult;
 
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public abstract class PaymentProviderAdapter {
-    protected static final int MIN_NORMAL_DELAY_MS = 80;
-    protected static final int MIN_TIMEOUT_DELAY_MS = 1_000;
 
     abstract public PspName providerName();
 
     abstract public PaymentProviderResult process(PaymentProviderRequest request);
 
+    protected PaymentProviderResult simulate(
+            PspProperties.Provider provider,
+            String providerReferencePrefix,
+            String failureReason,
+            String timeoutReason) {
+        if (!provider.isEnabled()) {
+            return PaymentProviderResult.failed(providerName() + " is disabled");
+        }
 
-    protected int sleepRandomDelay(int minDelayMs, int extraDelayMs) {
-        int maxDelayMs = minDelayMs + extraDelayMs;
+        int totalRate = provider.getSuccessRate() + provider.getFailureRate() + provider.getTimeoutRate();
+        if (totalRate <= 0) {
+            return PaymentProviderResult.failed(providerName() + " has invalid outcome configuration");
+        }
+
+        int outcome = ThreadLocalRandom.current().nextInt(totalRate);
+        if (outcome < provider.getSuccessRate()) {
+            sleepRandomDelay(provider.getNormalDelayMinMs(), provider.getNormalDelayMaxMs());
+            return PaymentProviderResult.success(providerReferencePrefix + UUID.randomUUID().toString().replace("-", ""));
+        }
+
+        if (outcome < provider.getSuccessRate() + provider.getFailureRate()) {
+            sleepRandomDelay(provider.getNormalDelayMinMs(), provider.getNormalDelayMaxMs());
+            return PaymentProviderResult.failed(failureReason);
+        }
+
+        sleepRandomDelay(provider.getTimeoutDelayMinMs(), provider.getTimeoutDelayMaxMs());
+        return PaymentProviderResult.timeout(timeoutReason);
+    }
+
+    protected void sleepRandomDelay(int minDelayMs, int maxDelayMs) {
         int delayMs = ThreadLocalRandom.current().nextInt(minDelayMs, maxDelayMs + 1);
         sleepExactDelay(delayMs);
-        return delayMs;
     }
 
     protected void sleepExactDelay(int delayMs) {

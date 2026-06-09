@@ -3,6 +3,9 @@ server:
     include-message: always
     include-binding-errors: always
 spring:
+  config:
+    import: classpath:psp.yaml
+
   application:
     name: malafi-payments
 
@@ -22,5 +25,3 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-
-

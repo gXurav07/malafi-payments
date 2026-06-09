@@ -14,6 +14,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "payment_attempts")
 @Getter
@@ -37,25 +39,39 @@ public class PaymentAttempt extends BaseEntity {
     @Column(length = 120)
     private String providerReferenceId;
 
+    @Column
+    private Long latencyMs;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal cost;
+
     public PaymentAttempt(Payment payment, String pspName) {
         this.payment = payment;
         this.pspName = pspName;
         this.status = PaymentAttemptStatus.INITIATED;
     }
 
-    public void markSuccess(String providerReferenceId) {
+    public void markSuccess(String providerReferenceId, Long latencyMs, BigDecimal cost) {
         this.status = PaymentAttemptStatus.SUCCESS;
         this.providerReferenceId = providerReferenceId;
         this.failureReason = null;
+        recordMetrics(latencyMs, cost);
     }
 
-    public void markFailed(String failureReason) {
+    public void markFailed(String failureReason, Long latencyMs, BigDecimal cost) {
         this.status = PaymentAttemptStatus.FAILED;
         this.failureReason = failureReason;
+        recordMetrics(latencyMs, cost);
     }
 
-    public void markTimeout(String failureReason) {
+    public void markTimeout(String failureReason, Long latencyMs, BigDecimal cost) {
         this.status = PaymentAttemptStatus.TIMEOUT;
         this.failureReason = failureReason;
+        recordMetrics(latencyMs, cost);
+    }
+
+    private void recordMetrics(Long latencyMs, BigDecimal cost) {
+        this.latencyMs = latencyMs;
+        this.cost = cost;
     }
 }

@@ -8,6 +8,10 @@ import com.malafi.payments.malafi_payments.payment.dto.PaymentResponse;
 import com.malafi.payments.malafi_payments.paymentattempt.PaymentAttempt;
 import com.malafi.payments.malafi_payments.paymentattempt.PaymentAttemptRepository;
 import com.malafi.payments.malafi_payments.paymentattempt.PaymentAttemptStatus;
+import com.malafi.payments.malafi_payments.psp.PspName;
+import com.malafi.payments.malafi_payments.routing.RoutingDecision;
+import com.malafi.payments.malafi_payments.routing.RoutingDecisionRepository;
+import com.malafi.payments.malafi_payments.routing.RoutingStrategy;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,10 +40,13 @@ class PaymentPhase1FlowTest {
     @Autowired
     private PaymentAttemptRepository paymentAttemptRepository;
 
+    @Autowired
+    private RoutingDecisionRepository routingDecisionRepository;
+
     @Test
     void createsMerchantCreatesPaymentAndConfirmsThroughMockPsp() {
         MerchantResponse merchant = merchantService.createMerchant(
-                new CreateMerchantRequest("Phase 1 Test Merchant")
+                new CreateMerchantRequest("Phase 1 Test Merchant", null)
         );
 
         PaymentResponse createdPayment = paymentService.createPayment(
@@ -70,7 +77,23 @@ class PaymentPhase1FlowTest {
 
         PaymentAttempt attempt = attempts.getFirst();
         assertEquals(createdPayment.paymentId(), attempt.getPayment().getId());
-        assertEquals("CASHFREE_MOCK", attempt.getPspName());
+        assertTrue(
+                attempt.getPspName().equals(PspName.CASHFREE_MOCK.name())
+                        || attempt.getPspName().equals(PspName.RAZORPAY_MOCK.name())
+                        || attempt.getPspName().equals(PspName.STRIPE_MOCK.name())
+        );
+
+        List<RoutingDecision> routingDecisions = routingDecisionRepository
+                .findByPaymentIdOrderByCreatedAtAsc(createdPayment.paymentId());
+
+        assertEquals(1, routingDecisions.size());
+        RoutingDecision routingDecision = routingDecisions.getFirst();
+        assertEquals(RoutingStrategy.BALANCED, routingDecision.getStrategy());
+        assertEquals(attempt.getPspName(), routingDecision.getSelectedPsp().name());
+        assertNotNull(routingDecision.getSelectedScore());
+        assertFalse(routingDecision.getReason().isBlank());
+        assertFalse(routingDecision.getCandidateSummary().isBlank());
+
         assertTrue(
                 attempt.getStatus() == PaymentAttemptStatus.SUCCESS
                         || attempt.getStatus() == PaymentAttemptStatus.FAILED

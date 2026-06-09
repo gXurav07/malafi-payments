@@ -1,5 +1,7 @@
 package com.malafi.payments.malafi_payments.psp;
 
 public enum PspName {
-    CASHFREE_MOCK
+    CASHFREE_MOCK,
+    RAZORPAY_MOCK,
+    STRIPE_MOCK
 }
