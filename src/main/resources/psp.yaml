@@ -1,0 +1,45 @@
+malafi:
+  payment-processing:
+    max-total-attempts: 3
+  psp:
+    providers:
+      CASHFREE_MOCK:
+        enabled: true
+        success-rate: 88
+        failure-rate: 7
+        timeout-rate: 5
+        normal-delay-min-ms: 250
+        normal-delay-max-ms: 700
+        timeout-delay-min-ms: 1200
+        timeout-delay-max-ms: 1800
+        cost-bps: 120
+        capabilities:
+          - UPI
+          - CARDS
+      RAZORPAY_MOCK:
+        enabled: true
+        success-rate: 84
+        failure-rate: 10
+        timeout-rate: 6
+        normal-delay-min-ms: 100
+        normal-delay-max-ms: 350
+        timeout-delay-min-ms: 900
+        timeout-delay-max-ms: 1400
+        cost-bps: 180
+        capabilities:
+          - UPI
+          - CARDS
+          - NETBANKING
+      STRIPE_MOCK:
+        enabled: true
+        success-rate: 94
+        failure-rate: 4
+        timeout-rate: 2
+        normal-delay-min-ms: 180
+        normal-delay-max-ms: 450
+        timeout-delay-min-ms: 1000
+        timeout-delay-max-ms: 1500
+        cost-bps: 300
+        capabilities:
+          - CARDS
+          - INTERNATIONAL

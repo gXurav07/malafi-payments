@@ -73,14 +73,15 @@ class PaymentPhase1FlowTest {
         List<PaymentAttempt> attempts = paymentAttemptRepository
                 .findByPaymentIdOrderByCreatedAtAsc(createdPayment.paymentId());
 
-        assertEquals(1, attempts.size());
+        assertTrue(attempts.size() >= 1);
 
-        PaymentAttempt attempt = attempts.getFirst();
-        assertEquals(createdPayment.paymentId(), attempt.getPayment().getId());
+        PaymentAttempt firstAttempt = attempts.getFirst();
+        PaymentAttempt finalAttempt = attempts.getLast();
+        assertEquals(createdPayment.paymentId(), firstAttempt.getPayment().getId());
         assertTrue(
-                attempt.getPspName().equals(PspName.CASHFREE_MOCK.name())
-                        || attempt.getPspName().equals(PspName.RAZORPAY_MOCK.name())
-                        || attempt.getPspName().equals(PspName.STRIPE_MOCK.name())
+                firstAttempt.getPspName().equals(PspName.CASHFREE_MOCK.name())
+                        || firstAttempt.getPspName().equals(PspName.RAZORPAY_MOCK.name())
+                        || firstAttempt.getPspName().equals(PspName.STRIPE_MOCK.name())
         );
 
         List<RoutingDecision> routingDecisions = routingDecisionRepository
@@ -89,23 +90,23 @@ class PaymentPhase1FlowTest {
         assertEquals(1, routingDecisions.size());
         RoutingDecision routingDecision = routingDecisions.getFirst();
         assertEquals(RoutingStrategy.BALANCED, routingDecision.getStrategy());
-        assertEquals(attempt.getPspName(), routingDecision.getSelectedPsp().name());
+        assertEquals(firstAttempt.getPspName(), routingDecision.getSelectedPsp().name());
         assertNotNull(routingDecision.getSelectedScore());
         assertFalse(routingDecision.getReason().isBlank());
         assertFalse(routingDecision.getCandidateSummary().isBlank());
 
         assertTrue(
-                attempt.getStatus() == PaymentAttemptStatus.SUCCESS
-                        || attempt.getStatus() == PaymentAttemptStatus.FAILED
-                        || attempt.getStatus() == PaymentAttemptStatus.TIMEOUT
+                finalAttempt.getStatus() == PaymentAttemptStatus.SUCCESS
+                        || finalAttempt.getStatus() == PaymentAttemptStatus.FAILED
+                        || finalAttempt.getStatus() == PaymentAttemptStatus.TIMEOUT
         );
 
-        if (attempt.getStatus() == PaymentAttemptStatus.SUCCESS) {
+        if (finalAttempt.getStatus() == PaymentAttemptStatus.SUCCESS) {
             assertEquals(PaymentStatus.SUCCESS, confirmedPayment.status());
-            assertNotNull(attempt.getProviderReferenceId());
+            assertNotNull(finalAttempt.getProviderReferenceId());
         } else {
             assertEquals(PaymentStatus.FAILED, confirmedPayment.status());
-            assertFalse(attempt.getFailureReason().isBlank());
+            assertFalse(finalAttempt.getFailureReason().isBlank());
         }
     }
 }

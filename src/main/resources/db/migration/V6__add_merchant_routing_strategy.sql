@@ -1,0 +1,2 @@
+ALTER TABLE merchants
+    ADD COLUMN routing_strategy VARCHAR(40) NOT NULL DEFAULT 'BALANCED';

@@ -2,6 +2,7 @@ package com.malafi.payments.malafi_payments.paymentattempt;
 
 import com.malafi.payments.malafi_payments.common.BaseEntity;
 import com.malafi.payments.malafi_payments.payment.Payment;
+import com.malafi.payments.malafi_payments.psp.dto.PaymentProviderFailureCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -36,6 +37,10 @@ public class PaymentAttempt extends BaseEntity {
     @Column(length = 500)
     private String failureReason;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 40)
+    private PaymentProviderFailureCode failureCode;
+
     @Column(length = 120)
     private String providerReferenceId;
 
@@ -51,21 +56,24 @@ public class PaymentAttempt extends BaseEntity {
         this.status = PaymentAttemptStatus.INITIATED;
     }
 
-    public void markSuccess(String providerReferenceId, Long latencyMs, BigDecimal cost) {
+    public void markSuccess(String providerReferenceId, PaymentProviderFailureCode failureCode, Long latencyMs, BigDecimal cost) {
         this.status = PaymentAttemptStatus.SUCCESS;
         this.providerReferenceId = providerReferenceId;
         this.failureReason = null;
+        this.failureCode = failureCode;
         recordMetrics(latencyMs, cost);
     }
 
-    public void markFailed(String failureReason, Long latencyMs, BigDecimal cost) {
+    public void markFailed(PaymentProviderFailureCode failureCode, String failureReason, Long latencyMs, BigDecimal cost) {
         this.status = PaymentAttemptStatus.FAILED;
+        this.failureCode = failureCode;
         this.failureReason = failureReason;
         recordMetrics(latencyMs, cost);
     }
 
-    public void markTimeout(String failureReason, Long latencyMs, BigDecimal cost) {
+    public void markTimeout(PaymentProviderFailureCode failureCode, String failureReason, Long latencyMs, BigDecimal cost) {
         this.status = PaymentAttemptStatus.TIMEOUT;
+        this.failureCode = failureCode;
         this.failureReason = failureReason;
         recordMetrics(latencyMs, cost);
     }

@@ -1,6 +1,7 @@
 package com.malafi.payments.malafi_payments.psp;
 
 import com.malafi.payments.malafi_payments.psp.dto.PaymentProviderRequest;
+import com.malafi.payments.malafi_payments.psp.dto.PaymentProviderFailureCode;
 import com.malafi.payments.malafi_payments.psp.dto.PaymentProviderResult;
 
 import java.util.UUID;
@@ -34,11 +35,22 @@ public abstract class PaymentProviderAdapter {
 
         if (outcome < provider.getSuccessRate() + provider.getFailureRate()) {
             sleepRandomDelay(provider.getNormalDelayMinMs(), provider.getNormalDelayMaxMs());
-            return PaymentProviderResult.failed(failureReason);
+            return randomFailure(failureReason);
         }
 
         sleepRandomDelay(provider.getTimeoutDelayMinMs(), provider.getTimeoutDelayMaxMs());
         return PaymentProviderResult.timeout(timeoutReason);
+    }
+
+    private PaymentProviderResult randomFailure(String failureReason) {
+        int outcome = ThreadLocalRandom.current().nextInt(100);
+        if (outcome < 50) {
+            return PaymentProviderResult.retryableFailure(PaymentProviderFailureCode.PSP_ERROR, failureReason);
+        }
+        if (outcome < 75) {
+            return PaymentProviderResult.nonRetryableFailure(PaymentProviderFailureCode.INSUFFICIENT_FUNDS, "Insufficient funds");
+        }
+        return PaymentProviderResult.nonRetryableFailure(PaymentProviderFailureCode.INVALID_CARD, "Invalid card");
     }
 
     protected void sleepRandomDelay(int minDelayMs, int maxDelayMs) {
