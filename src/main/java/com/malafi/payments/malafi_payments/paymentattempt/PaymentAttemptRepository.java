@@ -9,4 +9,6 @@ import java.util.List;
 public interface PaymentAttemptRepository extends JpaRepository<PaymentAttempt, Long> {
 
     List<PaymentAttempt> findByPaymentIdOrderByCreatedAtAsc(Long paymentId);
+
+    boolean existsByPaymentIdAndStatus(Long paymentId, PaymentAttemptStatus status);
 }

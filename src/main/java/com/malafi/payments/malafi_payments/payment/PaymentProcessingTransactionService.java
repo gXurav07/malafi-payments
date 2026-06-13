@@ -3,6 +3,7 @@ package com.malafi.payments.malafi_payments.payment;
 import com.malafi.payments.malafi_payments.payment.dto.PaymentResponse;
 import com.malafi.payments.malafi_payments.paymentattempt.PaymentAttempt;
 import com.malafi.payments.malafi_payments.paymentattempt.PaymentAttemptRepository;
+import com.malafi.payments.malafi_payments.paymentattempt.PaymentAttemptStatus;
 import com.malafi.payments.malafi_payments.psp.PspName;
 import com.malafi.payments.malafi_payments.psp.dto.PaymentProviderRequest;
 import com.malafi.payments.malafi_payments.psp.dto.PaymentProviderResult;
@@ -29,14 +30,19 @@ public class PaymentProcessingTransactionService {
 
     @Transactional
     public PaymentProcessingStart startProcessing(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
+        int updatedRows = paymentRepository.markCreatedPaymentProcessing(paymentId);
 
-        if (payment.getStatus() != PaymentStatus.CREATED) {
+        if (updatedRows == 0) {
+            Payment existingPayment = paymentRepository.findById(paymentId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
+            if (existingPayment.getStatus() == PaymentStatus.PROCESSING) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Payment is already being confirmed");
+            }
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only CREATED payments can be confirmed");
         }
 
-        payment.markProcessing();
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
 
         RoutingResult routingResult = routingEngine.route(payment.getMerchant().getRoutingStrategy());
 
@@ -98,6 +104,9 @@ public class PaymentProcessingTransactionService {
     private void applyProviderResult(Payment payment, PaymentAttempt attempt, PaymentProviderResult result, boolean finalAttempt) {
         switch (result.status()) {
             case SUCCESS -> {
+                if (paymentAttemptRepository.existsByPaymentIdAndStatus(payment.getId(), PaymentAttemptStatus.SUCCESS)) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Payment already has a successful PSP attempt");
+                }
                 attempt.markSuccess(result.providerReferenceId(), result.failureCode(), result.latencyMs(), result.cost());
                 payment.markSuccess();
             }

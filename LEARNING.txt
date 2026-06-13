@@ -9,3 +9,15 @@ To Learn:
 Learnings:
     1. Spring Boot      2. Postgres Basics         3. Spring Data JPA
     4. Flyway -> Acts as Git for databases; Stores all database alter history
+    5. Idempotency
+
+
+
+
+
+
+
+
+Future improvements:-
+- merchant_id + endpoint/operation + idempotency_key -> unique constraint
+- Add dynamic scoring, scores based on recent attempts

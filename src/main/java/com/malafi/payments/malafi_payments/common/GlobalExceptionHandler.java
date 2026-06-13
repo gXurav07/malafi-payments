@@ -1,6 +1,7 @@
 package com.malafi.payments.malafi_payments.common;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(toErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(toErrorResponse(HttpStatus.CONFLICT, "Request conflicts with existing data", request));
     }
 
     private ErrorResponse toErrorResponse(
